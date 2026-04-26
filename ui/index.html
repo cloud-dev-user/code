@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claim Portal</title>
+</head>
+<body>
+
+<h2>Submit Claim</h2>
+<input id="claimId" placeholder="Claim ID"><br>
+<input id="amount" placeholder="Amount"><br>
+<input id="hospital" placeholder="Hospital"><br>
+<button onclick="submitClaim()">Submit</button>
+
+<h2>Check Status</h2>
+<input id="searchId" placeholder="Claim ID"><br>
+<button onclick="getStatus()">Get Status</button>
+
+<p id="result"></p>
+
+<script>
+function submitClaim() {
+  fetch("http://localhost:9080/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      claimId: document.getElementById("claimId").value,
+      amount: document.getElementById("amount").value,
+      hospital: document.getElementById("hospital").value
+    })
+  })
+  .then(res => res.text())
+  .then(data => alert("Claim submitted"));
+}
+
+function getStatus() {
+  let id = document.getElementById("searchId").value;
+  fetch(`http://localhost:9080/claim/${id}`)
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("result").innerText =
+      "Status: " + data.status;
+  });
+}
+</script>
+
+</body>
+</html>
