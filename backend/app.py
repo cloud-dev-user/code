@@ -17,7 +17,7 @@ r = redis.Redis(host='redis', port=6379, decode_responses=True)
 def create_claim():
     data = request.json
     producer.send('claim-events', data)
-    return {"message": "Claim submitted"}
+    return jsonify({"message": "Claim submitted"})
 
 # GET CLAIM (READ → Redis)
 @app.route('/claim/<claim_id>', methods=['GET'])

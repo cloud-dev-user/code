@@ -1,45 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Claim Portal</title>
+<meta charset="UTF-8">
+<title>Claim Processing System</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f7fa;
+        margin: 0;
+        padding: 20px;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+    }
+    .card {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+        margin-top: 0;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+    button {
+        padding: 10px 15px;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #0056b3;
+    }
+    .status {
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    .loading { color: orange; }
+</style>
 </head>
+
 <body>
 
-<h2>Submit Claim</h2>
-<input id="claimId" placeholder="Claim ID"><br>
-<input id="amount" placeholder="Amount"><br>
-<input id="hospital" placeholder="Hospital"><br>
-<button onclick="submitClaim()">Submit</button>
+<div class="container">
 
-<h2>Check Status</h2>
-<input id="searchId" placeholder="Claim ID"><br>
-<button onclick="getStatus()">Get Status</button>
+    <div class="card">
+        <h2>📤 Submit Claim</h2>
+        <input type="text" id="claimId" placeholder="Claim ID (e.g. c101)">
+        <input type="number" id="amount" placeholder="Amount">
+        <input type="text" id="type" placeholder="Type (Hospital)">
+        <button onclick="submitClaim()">Submit Claim</button>
+        <div id="submitStatus" class="status"></div>
+    </div>
 
-<p id="result"></p>
+    <div class="card">
+        <h2>🔍 Check Claim Status</h2>
+        <input type="text" id="statusId" placeholder="Enter Claim ID">
+        <button onclick="getStatus()">Get Status</button>
+        <button onclick="startAutoRefresh()">Auto Refresh</button>
+        <div id="statusResult" class="status"></div>
+    </div>
+
+</div>
 
 <script>
-function submitClaim() {
-  fetch("http://localhost:9080/claim", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      claimId: document.getElementById("claimId").value,
-      amount: document.getElementById("amount").value,
-      hospital: document.getElementById("hospital").value
-    })
-  })
-  .then(res => res.text())
-  .then(data => alert("Claim submitted"));
+const BASE_URL = "http://localhost:9080";
+
+// Submit Claim
+async function submitClaim() {
+    const claimId = document.getElementById("claimId").value;
+    const amount = document.getElementById("amount").value;
+    const type = document.getElementById("type").value;
+    const statusDiv = document.getElementById("submitStatus");
+
+    statusDiv.innerHTML = "⏳ Submitting...";
+    statusDiv.className = "status loading";
+
+    try {
+        const response = await fetch(`${BASE_URL}/claim`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                claim_id: claimId,
+                amount: Number(amount),
+                type: type
+            })
+        });
+
+        const data = await response.json();
+        statusDiv.innerHTML = "✅ " + data.message;
+        statusDiv.className = "status success";
+
+    } catch (err) {
+        statusDiv.innerHTML = "❌ Error submitting claim";
+        statusDiv.className = "status error";
+    }
 }
 
-function getStatus() {
-  let id = document.getElementById("searchId").value;
-  fetch(`http://localhost:9080/claim/${id}`)
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById("result").innerText =
-      "Status: " + data.status;
-  });
+// Get Status
+async function getStatus() {
+    const claimId = document.getElementById("statusId").value;
+    const resultDiv = document.getElementById("statusResult");
+
+    resultDiv.innerHTML = "⏳ Fetching...";
+    resultDiv.className = "status loading";
+
+    try {
+        const response = await fetch(`${BASE_URL}/claim/${claimId}`);
+        const data = await response.json();
+
+        if (Object.keys(data).length === 0) {
+            resultDiv.innerHTML = "⚠️ Claim not found";
+            resultDiv.className = "status error";
+        } else {
+            resultDiv.innerHTML = 
+                `✅ Status: ${data.status} | Amount: ${data.amount}`;
+            resultDiv.className = "status success";
+        }
+
+    } catch (err) {
+        resultDiv.innerHTML = "❌ Error fetching status";
+        resultDiv.className = "status error";
+    }
+}
+
+// Auto Refresh every 3 sec
+function startAutoRefresh() {
+    setInterval(() => {
+        getStatus();
+    }, 3000);
 }
 </script>
 
