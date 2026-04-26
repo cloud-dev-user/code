@@ -2,53 +2,86 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Claim Processing System</title>
+<title>Claim Processing Dashboard</title>
+
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f7fa;
-        margin: 0;
-        padding: 20px;
-    }
-    .container {
-        max-width: 600px;
-        margin: auto;
-    }
-    .card {
-        background: white;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-        margin-top: 0;
-    }
-    input {
-        width: 100%;
-        padding: 10px;
-        margin: 8px 0;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
-    button {
-        padding: 10px 15px;
-        border: none;
-        background: #007bff;
-        color: white;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-    button:hover {
-        background: #0056b3;
-    }
-    .status {
-        margin-top: 10px;
-        font-weight: bold;
-    }
-    .success { color: green; }
-    .error { color: red; }
-    .loading { color: orange; }
+body {
+    font-family: Arial;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h2 { margin-top: 0; }
+
+input {
+    padding: 10px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px 15px;
+    margin-top: 10px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+.status {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 6px;
+    color: white;
+    font-size: 12px;
+}
+
+.approved { background: green; }
+.rejected { background: red; }
+.pending { background: orange; }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.loading {
+    color: orange;
+}
+
+.error {
+    color: red;
+}
 </style>
 </head>
 
@@ -56,92 +89,125 @@
 
 <div class="container">
 
+    <!-- Submit -->
     <div class="card">
         <h2>📤 Submit Claim</h2>
-        <input type="text" id="claimId" placeholder="Claim ID (e.g. c101)">
-        <input type="number" id="amount" placeholder="Amount">
-        <input type="text" id="type" placeholder="Type (Hospital)">
-        <button onclick="submitClaim()">Submit Claim</button>
-        <div id="submitStatus" class="status"></div>
+        <input id="claimId" placeholder="Claim ID (c101)">
+        <input id="amount" type="number" placeholder="Amount">
+        <input id="type" placeholder="Type (Hospital)">
+        <button onclick="submitClaim()">Submit</button>
+        <div id="submitMsg" class="status"></div>
     </div>
 
+    <!-- Dashboard -->
     <div class="card">
-        <h2>🔍 Check Claim Status</h2>
-        <input type="text" id="statusId" placeholder="Enter Claim ID">
-        <button onclick="getStatus()">Get Status</button>
-        <button onclick="startAutoRefresh()">Auto Refresh</button>
-        <div id="statusResult" class="status"></div>
+        <h2>📊 Claims Dashboard</h2>
+        <button onclick="refreshAll()">Refresh</button>
+        <button onclick="startAuto()">Auto Refresh</button>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Claim ID</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="claimsTable"></tbody>
+        </table>
     </div>
 
 </div>
 
 <script>
 const BASE_URL = "http://localhost:9080";
+let trackedClaims = [];
 
-// Submit Claim
+// Submit claim
 async function submitClaim() {
-    const claimId = document.getElementById("claimId").value;
+    const id = document.getElementById("claimId").value;
     const amount = document.getElementById("amount").value;
     const type = document.getElementById("type").value;
-    const statusDiv = document.getElementById("submitStatus");
+    const msg = document.getElementById("submitMsg");
 
-    statusDiv.innerHTML = "⏳ Submitting...";
-    statusDiv.className = "status loading";
+    msg.innerHTML = "Submitting...";
+    msg.className = "status loading";
 
     try {
-        const response = await fetch(`${BASE_URL}/claim`, {
+        await fetch(`${BASE_URL}/claim`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
-                claim_id: claimId,
+                claim_id: id,
                 amount: Number(amount),
                 type: type
             })
         });
 
-        const data = await response.json();
-        statusDiv.innerHTML = "✅ " + data.message;
-        statusDiv.className = "status success";
+        msg.innerHTML = "✅ Submitted";
+        msg.className = "status";
 
-    } catch (err) {
-        statusDiv.innerHTML = "❌ Error submitting claim";
-        statusDiv.className = "status error";
-    }
-}
-
-// Get Status
-async function getStatus() {
-    const claimId = document.getElementById("statusId").value;
-    const resultDiv = document.getElementById("statusResult");
-
-    resultDiv.innerHTML = "⏳ Fetching...";
-    resultDiv.className = "status loading";
-
-    try {
-        const response = await fetch(`${BASE_URL}/claim/${claimId}`);
-        const data = await response.json();
-
-        if (Object.keys(data).length === 0) {
-            resultDiv.innerHTML = "⚠️ Claim not found";
-            resultDiv.className = "status error";
-        } else {
-            resultDiv.innerHTML = 
-                `✅ Status: ${data.status} | Amount: ${data.amount}`;
-            resultDiv.className = "status success";
+        if (!trackedClaims.includes(id)) {
+            trackedClaims.push(id);
         }
 
-    } catch (err) {
-        resultDiv.innerHTML = "❌ Error fetching status";
-        resultDiv.className = "status error";
+        refreshAll();
+
+    } catch (e) {
+        msg.innerHTML = "❌ Failed";
+        msg.className = "status error";
     }
 }
 
-// Auto Refresh every 3 sec
-function startAutoRefresh() {
-    setInterval(() => {
-        getStatus();
-    }, 3000);
+// Fetch one claim
+async function fetchClaim(id) {
+    try {
+        const res = await fetch(`${BASE_URL}/claim/${id}`);
+        return await res.json();
+    } catch {
+        return null;
+    }
 }
+
+// Refresh dashboard
+async function refreshAll() {
+    const table = document.getElementById("claimsTable");
+    table.innerHTML = "";
+
+    for (let id of trackedClaims) {
+        const data = await fetchClaim(id);
+
+        let status = "PENDING";
+        let amount = "-";
+
+        if (data && data.status) {
+            status = data.status;
+            amount = data.amount;
+        }
+
+        let badgeClass = "pending";
+        if (status === "APPROVED") badgeClass = "approved";
+        if (status === "REJECTED") badgeClass = "rejected";
+
+        table.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${amount}</td>
+                <td><span class="badge ${badgeClass}">${status}</span></td>
+            </tr>
+        `;
+    }
+}
+
+// Auto refresh every 3 sec
+function startAuto() {
+    setInterval(refreshAll, 3000);
+}
+
+// Demo preload
+trackedClaims = ["c101"];
+refreshAll();
+
 </script>
 
 </body>
