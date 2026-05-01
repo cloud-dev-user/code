@@ -82,10 +82,9 @@
       background: red;
     }
 
-    .loading {
-      color: gray;
-      font-style: italic;
-    }
+    .success { color: green; }
+    .error   { color: red; }
+    .loading { color: gray; font-style: italic; }
   </style>
 </head>
 <body>
@@ -103,6 +102,14 @@
     <button onclick="submitClaim()">Submit</button>
 
     <div id="submitStatus" class="status"></div>
+  </div>
+
+  <!-- Check Claim Status -->
+  <div class="card">
+    <h2>🔍 Check Claim Status</h2>
+    <input id="statusId" placeholder="Enter Claim ID (e.g. c101)">
+    <button onclick="getStatus()">Check Status</button>
+    <div id="statusResult" class="status"></div>
   </div>
 
   <!-- Dashboard -->
@@ -158,6 +165,30 @@ async function submitClaim() {
 
   } catch (err) {
     statusDiv.innerText = "❌ Error submitting claim";
+  }
+}
+
+async function getStatus() {
+  const claimId   = document.getElementById("statusId").value;
+  const resultDiv = document.getElementById("statusResult");
+
+  resultDiv.textContent = "Fetching...";
+  resultDiv.className   = "status loading";
+
+  try {
+    const res  = await fetch(`http://localhost:9080/claim/${claimId}`);
+    const data = await res.json();
+
+    if (Object.keys(data).length === 0) {
+      resultDiv.textContent = "Claim not found";
+      resultDiv.className   = "status error";
+    } else {
+      resultDiv.textContent = "Status: " + data.status + " | Amount: " + data.amount;
+      resultDiv.className   = "status " + (data.status === "APPROVED" ? "success" : "error");
+    }
+  } catch (err) {
+    resultDiv.textContent = "Error fetching status";
+    resultDiv.className   = "status error";
   }
 }
 
