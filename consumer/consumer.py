@@ -1,14 +1,25 @@
 from kafka import KafkaConsumer
+from kafka.errors import NoBrokersAvailable
 import redis
 import json
+import time
 
-consumer = KafkaConsumer(
-    'claim-events',
-    bootstrap_servers='kafka:9092',
-    value_deserializer=lambda x: json.loads(x.decode('utf-8')),
-    auto_offset_reset='earliest',
-    group_id='claim-group'
-)
+def create_consumer(retries=10, delay=5):
+    for attempt in range(1, retries + 1):
+        try:
+            return KafkaConsumer(
+                'claim-events',
+                bootstrap_servers='kafka:9092',
+                value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+                auto_offset_reset='earliest',
+                group_id='claim-group'
+            )
+        except NoBrokersAvailable:
+            print(f"Kafka not ready (attempt {attempt}/{retries}), retrying in {delay}s...", flush=True)
+            time.sleep(delay)
+    raise RuntimeError("Could not connect to Kafka after retries")
+
+consumer = create_consumer()
 
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 

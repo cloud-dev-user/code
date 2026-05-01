@@ -32,23 +32,24 @@ cd <project-folder>
 
 ## 2. Start All Services
 
+### Option A — Automated (recommended)
+
 ```bash
-docker-compose up --build
+chmod +x startup.sh
+./startup.sh
 ```
 
-This single command starts all 8 services in the correct dependency order:
+`startup.sh` handles everything: starts containers, waits for APISIX to be ready, registers both API routes, and confirms the backend is reachable.
 
-```
-Zookeeper → Kafka → Redis → etcd → APISIX → Backend → Consumer → UI
-```
-
-> First run will pull Docker images (~1–2 GB). Subsequent starts are fast.
-
-To run in the background (detached mode):
+### Option B — Manual
 
 ```bash
 docker-compose up --build -d
 ```
+
+Then follow steps 3 and 4 below to verify and configure routes.
+
+> First run will pull Docker images (~1–2 GB). Subsequent starts are fast.
 
 ---
 
