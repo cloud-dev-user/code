@@ -36,4 +36,16 @@ def get_claim(claim_id):
     data = r.hgetall(f"claim:{claim_id}")
     return jsonify(data)
 
+# LIST ALL CLAIMS (READ → Redis)
+@app.route('/claims', methods=['GET'])
+def list_claims():
+    keys = r.keys("claim:*")
+    claims = []
+    for key in sorted(keys):
+        claim_id = key.split(":", 1)[1]
+        data = r.hgetall(key)
+        data["claim_id"] = claim_id
+        claims.append(data)
+    return jsonify(claims)
+
 app.run(host="0.0.0.0", port=5000)

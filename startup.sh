@@ -89,6 +89,29 @@ CODE=$(curl -s -o /dev/null -w "%{http_code}" \
 [[ "$CODE" == 2* ]] || fail "GET /claim/* route registration failed (HTTP $CODE)"
 log "  GET /claim/* registered (HTTP $CODE)"
 
+log "Registering route: GET /claims"
+CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+  -X PUT "$APISIX_ADMIN/routes/3" \
+  -H "X-API-KEY: $ADMIN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/claims",
+    "methods": ["GET", "OPTIONS"],
+    "plugins": {
+      "cors": {
+        "allow_origins": "*",
+        "allow_methods": "GET, OPTIONS",
+        "allow_headers": "Content-Type"
+      }
+    },
+    "upstream": {
+      "type": "roundrobin",
+      "nodes": { "backend:5000": 1 }
+    }
+  }')
+[[ "$CODE" == 2* ]] || fail "GET /claims route registration failed (HTTP $CODE)"
+log "  GET /claims registered (HTTP $CODE)"
+
 # ---------------------------------------------------------------------------
 # 4. Wait for backend to be reachable through the gateway
 # ---------------------------------------------------------------------------

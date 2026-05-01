@@ -199,32 +199,30 @@ async function loadClaims() {
   loading.innerText = "Loading...";
   table.innerHTML = "";
 
-  const ids = ["c101", "c103", "c104", "c105"]; // demo list
+  try {
+    const res    = await fetch("http://localhost:9080/claims");
+    const claims = await res.json();
 
-  for (let id of ids) {
-    try {
-      const res = await fetch(`http://localhost:9080/claim/${id}`);
-      const data = await res.json();
+    for (const data of claims) {
+      const row       = document.createElement("tr");
+      const idCell    = document.createElement("td");
+      const amtCell   = document.createElement("td");
+      const statCell  = document.createElement("td");
+      const badge     = document.createElement("span");
 
-      if (Object.keys(data).length === 0) continue;
+      idCell.textContent  = data.claim_id;
+      amtCell.textContent = data.amount;
+      badge.textContent   = data.status;
+      badge.className     = "badge " + (data.status === "APPROVED" ? "approved" : "rejected");
 
-      const row = `
-        <tr>
-          <td>${id}</td>
-          <td>${data.amount}</td>
-          <td>
-            <span class="badge ${data.status === 'APPROVED' ? 'approved' : 'rejected'}">
-              ${data.status}
-            </span>
-          </td>
-        </tr>
-      `;
-
-      table.innerHTML += row;
-
-    } catch (err) {
-      console.error(err);
+      statCell.appendChild(badge);
+      row.appendChild(idCell);
+      row.appendChild(amtCell);
+      row.appendChild(statCell);
+      table.appendChild(row);
     }
+  } catch (err) {
+    console.error(err);
   }
 
   loading.innerText = "";
