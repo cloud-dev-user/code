@@ -39,13 +39,23 @@ def get_claim(claim_id):
 # LIST ALL CLAIMS (READ → Redis)
 @app.route('/claims', methods=['GET'])
 def list_claims():
-    keys = r.keys("claim:*")
-    claims = []
-    for key in sorted(keys):
-        claim_id = key.split(":", 1)[1]
-        data = r.hgetall(key)
-        data["claim_id"] = claim_id
-        claims.append(data)
+    limit = request.args.get('limit', type=int)
+    if limit:
+        ids = r.lrange("claim:log", -limit, -1)
+        claims = []
+        for claim_id in ids:
+            data = r.hgetall(f"claim:{claim_id}")
+            if data:
+                data["claim_id"] = claim_id
+                claims.append(data)
+    else:
+        keys = r.keys("claim:*")
+        claims = []
+        for key in sorted(keys):
+            claim_id = key.split(":", 1)[1]
+            data = r.hgetall(key)
+            data["claim_id"] = claim_id
+            claims.append(data)
     return jsonify(claims)
 
 app.run(host="0.0.0.0", port=5000)

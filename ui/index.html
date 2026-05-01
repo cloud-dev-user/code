@@ -200,7 +200,7 @@ async function loadClaims() {
   table.innerHTML = "";
 
   try {
-    const res    = await fetch("http://localhost:9080/claims");
+    const res    = await fetch("http://localhost:9080/claims?limit=5");
     const claims = await res.json();
 
     for (const data of claims) {

@@ -47,6 +47,7 @@ for message in consumer:
             "status": status,
             "amount": amount
         })
+        r.rpush("claim:log", claim_id)
 
         print(f"{claim_id} → {status}", flush=True)
 
