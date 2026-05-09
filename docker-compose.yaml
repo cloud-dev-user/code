@@ -47,8 +47,20 @@ services:
     ports:
       - "9080:9080"
       - "9180:9180"
+      - "9091:9091"
     volumes:
       - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml
+   
+  apisix-dashboard:
+     image: apache/apisix-dashboard:3.0.1-alpine
+     container_name: apisix-dashboard
+     depends_on:
+      - apisix
+      - etcd
+     ports:
+      - "9000:9000"
+     volumes:
+      - ./apisix_conf/dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
 
   # -----------------------
   # BACKEND (Command + Query)
